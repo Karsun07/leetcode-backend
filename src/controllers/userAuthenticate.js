@@ -10,11 +10,13 @@ const register=async (req,res)=>{
         validate(req.body);
         const {firstName,emailId,password}=req.body;
         req.body.password=await  bcrypt.hash(password,10);
+        // this is user route , if a user register by admin role is kept as user role
+        req.body.role='user';
         
         // create user
         const user=await User.create(req.body);
         // generate token
-        const token=jwt.sign({_id:user._id,emailId:emailId},process.env.JWT_KEY,{expiresIn:60*60});
+        const token=jwt.sign({_id:user._id,emailId:emailId,role:'user'},process.env.JWT_KEY,{expiresIn:60*60});
         res.cookie('token',token,{maxAge: 60*60*1000});
         res.status(201).send("User Registered Successfully");
     }
@@ -44,7 +46,7 @@ const login=async (req,res)=>{
         if(!isMatch){
             throw new Error("Invalid Credential");
         }
-        const token =  jwt.sign({_id:user._id , emailId:emailId},process.env.JWT_KEY,{expiresIn: 60*60});
+        const token =  jwt.sign({_id:user._id , emailId:emailId,role:user.role},process.env.JWT_KEY,{expiresIn: 60*60});
         res.cookie('token',token,{maxAge: 60*60*1000}); 
         res.status(200).send("Logged In Succeessfully");
     }
@@ -70,4 +72,26 @@ const logout=async (req,res)=>{
     }
 }
 
-module.exports={register,login,logout};
+const adminRegister = async(req,res)=>{
+    try{
+        // validate the data;
+    //   if(req.result.role!='admin')
+    //     throw new Error("Invalid Credentials");  
+      validate(req.body); 
+      const {firstName, emailId, password}  = req.body;
+
+      req.body.password = await bcrypt.hash(password, 10);
+    //
+    
+     const user =  await User.create(req.body);
+     const token =  jwt.sign({_id:user._id , emailId:emailId, role:user.role},process.env.JWT_KEY,{expiresIn: 60*60});
+     res.cookie('token',token,{maxAge: 60*60*1000});
+     res.status(201).send("User Registered Successfully");
+    }
+    catch(err){
+        res.status(400).send("Error: "+err);
+    }
+}
+
+
+module.exports = {register, login,logout,adminRegister};
