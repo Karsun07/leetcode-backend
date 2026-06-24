@@ -1,6 +1,6 @@
 const { getLanguageById ,submitBatch} = require("../utils/problemUtility");
 
-const createProblem=(req,res)=>{
+const createProblem=async (req,res)=>{
     const {title,description,difficulty,tags,visibleTestCases,hiddenTestCases,
             startCode,refSolution,problemCreator} = req.body;
     try{
@@ -22,3 +22,4 @@ const createProblem=(req,res)=>{
           console.log(err);
     }
 }
+module.exports=createProblem;

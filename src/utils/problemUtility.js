@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios=require("axios");
 
 const getLanguageById=(lang)=>{
     const language={
@@ -9,7 +9,7 @@ const getLanguageById=(lang)=>{
     return language[lang.toLowerCase()];
 }
 
-const submitBatch=(submissions)=>{
+const submitBatch=async (submissions)=>{
   
     const options = {
   method: 'POST',

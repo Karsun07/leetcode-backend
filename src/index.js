@@ -4,6 +4,7 @@ require('dotenv').config();
 const main=require("./config/database");
 const cookieParser=require("cookie-parser");
 const authRouter=require("./routes/userAuth");
+const problemRouter=require("./routes/problemCreator");
 const redisClient=require("./config/redis");
 
 app.use(express.json());
@@ -13,6 +14,7 @@ app.get("/", (req, res) => {
     res.send("Server is running");
 });
 app.use("/user",authRouter);
+app.use("/user",problemRouter);
 
 
 
