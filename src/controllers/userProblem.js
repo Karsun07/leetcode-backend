@@ -111,4 +111,4 @@ const deleteProblem=async (req,res)=>{
 }
 
 
-module.exports = { createProblem, updateProblem };
+module.exports = { createProblem, updateProblem,deleteProblem};
