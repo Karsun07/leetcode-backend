@@ -6,6 +6,7 @@ const cookieParser=require("cookie-parser");
 const authRouter=require("./routes/userAuth");
 const problemRouter=require("./routes/problemCreator");
 const redisClient=require("./config/redis");
+const submitRouter = require("./routes/submit");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -15,7 +16,7 @@ app.get("/", (req, res) => {
 });
 app.use("/user",authRouter);
 app.use("/problem",problemRouter);
-
+app.use("/submission",submitRouter);
 
 
 async function initializeConnection(){

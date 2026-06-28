@@ -127,7 +127,7 @@ const getProblemById=async (req,res)=>{
 
 const getAllProblem=async (req,res)=>{
     try{
-        const getProblems=await Problem.find({});
+        const getProblems=await Problem.find({}).select('_id title difficulty tags');
         if(!getProblems.length) return res.status(404).send("Problem is Missing");
         res.status(200).send(targetProblem);
     }
