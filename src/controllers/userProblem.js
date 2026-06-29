@@ -145,8 +145,14 @@ const getAllProblem=async (req,res)=>{
 
 const solvedAllProblemByUser=async (req,res)=>{
     try{
-        const count=req.result.problemSolved.length;
-        res.status(200).send(count);
+        // const count=req.result.problemSolved.length;
+        // res.status(200).send(count);
+        const userId=req.result._id;
+        const user=await User.findById(userId).populate({
+            path:"problemSolved",
+            select:"_id title difficulty tags"
+        })
+        res.status(200).send(user.problemSolved);
     }
     catch(err){
         res.status(200).send(count);
