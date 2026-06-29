@@ -3,7 +3,7 @@ const Submission=require("../models/submission");
 const {languageId,submitBatch,submitToken}=require("../utils/problemUtility");
 
 
-const submitCode=(req,res)=>{
+
     const submitCode = async (req,res)=>{
    
     // 
@@ -83,6 +83,11 @@ const submitCode=(req,res)=>{
     submittedResult.memory = memory;
 
     await submittedResult.save();
+    // ProblemId to be insterted in problemSolved of userSchema if it is not present.
+    if(!req.result.problemSolved.includes(problemId)){
+        req.result.problemSolved.push(problemId);
+        await req.result.save();
+    }
 
     res.status(201).send(submittedResult);
        
@@ -112,5 +117,4 @@ module.exports = submitCode;
     
 
 
-}
 module.exports=submitCode;

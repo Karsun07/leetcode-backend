@@ -143,5 +143,14 @@ const getAllProblem=async (req,res)=>{
 //     tags:{${in:["array","hash"]}
 // })
 
+const solvedAllProblemByUser=async (req,res)=>{
+    try{
+        const count=req.result.problemSolved.length;
+        res.status(200).send(count);
+    }
+    catch(err){
+        res.status(200).send(count);
 
-module.exports = { createProblem, updateProblem,deleteProblem,getProblemById,getAllProblem};
+    }
+}
+module.exports = { createProblem, updateProblem,deleteProblem,getProblemById,getAllProblem,solvedAllProblemByUser};
