@@ -18,11 +18,11 @@ const submitBatch = async (submissions) => {
             base64_encoded: 'false'
         },
         headers: {
-            'x-rapidapi-key': '2823e8bad8msh4ade90106d368f4p1ffc72jsnaa1494cfa11a',
+            'x-rapidapi-key': process.env.RAPIDAPI_KEY,
             'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
             'Content-Type': 'application/json'
         },
-        data: submissions
+        data: {submissions}
     };
 
     async function FetchData() {
@@ -53,8 +53,8 @@ const submitToken = async (resultTokens) => {
             fields: '*'
         },
         headers: {
-            'x-rapidapi-key': '2823e8bad8msh4ade90106d368f4p1ffc72jsnaa1494cfa11a',
-            'x-rapidapi-host': 'judge0-extra-ce.p.rapidapi.com',
+            'x-rapidapi-key': process.env.RAPIDAPI_KEY,
+            'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
             'Content-Type': 'application/json'
         }
     };
@@ -96,6 +96,10 @@ const submitToken = async (resultTokens) => {
     // }
     while (true) {
         const result = await FetchData();
+        if (!result || !result.submissions) {
+            await waiting(1000);
+            continue;
+        }
         const isResultObtained = result.submissions.every((k) => k.status_id > 2);
         if (isResultObtained) {
             return result.submissions;

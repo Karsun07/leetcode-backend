@@ -1,5 +1,6 @@
 const { getLanguageById, submitBatch, submitToken } = require("../utils/problemUtility");
 const Problem = require("../models/problem");
+const User = require("../models/user");
 
 const createProblem = async (req, res) => {
     const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases,
@@ -29,7 +30,7 @@ const createProblem = async (req, res) => {
             //   }
             // ]
 
-            const resultToken = submitResult.map((value) => value.token);
+            const resultToken = submitResult?.map((value) => value.token);
             const testResult = await submitToken(resultToken);
 
             for (const test of testResult) {
@@ -47,7 +48,7 @@ const createProblem = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err);
+        res.status(500).send("Error: " + err);
     }
 }
 
@@ -63,7 +64,7 @@ const updateProblem = async (req, res) => {
 
         const targetProblem = await Problem.findById(id);
 
-        if (!targetProblem) res.status(400).send("No such problem exists");
+        if (!targetProblem) return res.status(400).send("No such problem exists");
 
         // check the code if its correct
         for (const { language, completeCode } of refSolution) {
@@ -86,10 +87,10 @@ const updateProblem = async (req, res) => {
             }
 
         }
-        const updatedProblem = await Problem.findByIdAndUpdate(id, ...req.body, { runValidators: "true", new: "true" });
+        const updatedProblem = await Problem.findByIdAndUpdate(id, req.body, { runValidators: true, new: true });
         // runValidator=>true means check , if the schema is limits are being obeyed
         // new => true means return the newly updated problem
-        res.status(200).send(newProblem);
+        res.status(200).send(updatedProblem);
     }
     catch (err) {
         res.status(500).send("Error: " + err);
@@ -102,7 +103,7 @@ const deleteProblem=async (req,res)=>{
         const { id } = req.params;
         if (!id) return res.status(400).send("Id is Missing");
         const deletedProblem=await Problem.findByIdAndDelete(id);
-        if(!deleteProblem) return res.status(404).send("No such problem exists");
+        if(!deletedProblem) return res.status(404).send("No such problem exists");
         res.status(200).send("Successfully Deleted");
     }   
     catch(err){
@@ -129,7 +130,7 @@ const getAllProblem=async (req,res)=>{
     try{
         const getProblems=await Problem.find({}).select('_id title difficulty tags');
         if(!getProblems.length) return res.status(404).send("Problem is Missing");
-        res.status(200).send(targetProblem);
+        res.status(200).send(getProblems);
     }
     catch(err){
         res.status(500).send("Error: "+err);
@@ -155,8 +156,9 @@ const solvedAllProblemByUser=async (req,res)=>{
         res.status(200).send(user.problemSolved);
     }
     catch(err){
-        res.status(200).send(count);
-
+        res.status(500).send("Error: "+err);
     }
 }
+
+
 module.exports = { createProblem, updateProblem,deleteProblem,getProblemById,getAllProblem,solvedAllProblemByUser};
