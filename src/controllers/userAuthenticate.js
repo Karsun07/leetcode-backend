@@ -19,12 +19,19 @@ const register=async (req,res)=>{
         // generate token
         const token=jwt.sign({_id:user._id,emailId:emailId,role:'user'},process.env.JWT_KEY,{expiresIn:60*60});
         res.cookie('token',token,{maxAge: 60*60*1000});
-        res.status(201).send("User Registered Successfully");
+        const reply={
+            firstName:user.firstName,
+            emailId:user.emailId,
+            _id:user._id
+        }
+        res.status(200).json({
+            user:reply,
+            message:"Loggin Successfull"
+        })
     }
     catch(err){
-        res.status(400).send("Error:"+err);
-
-    }
+    res.status(400).json({ message: err.message });
+}
 }
 
 const login=async (req,res)=>{
@@ -49,11 +56,19 @@ const login=async (req,res)=>{
         }
         const token =  jwt.sign({_id:user._id , emailId:emailId,role:user.role},process.env.JWT_KEY,{expiresIn: 60*60});
         res.cookie('token',token,{maxAge: 60*60*1000}); 
-        res.status(200).send("Logged In Succeessfully");
+        const reply={
+            firstName:user.firstName,
+            emailId:user.emailId,
+            _id:user._id
+        }
+        res.status(201).json({
+            user:reply,
+            message:"Loggin Successfull"
+        })
     }
     catch(err){
-        res.status(401).send("Error: "+err.message);
-    }
+    res.status(400).json({ message: err.message });
+}
 }
 const logout=async (req,res)=>{
     try{
@@ -69,8 +84,8 @@ const logout=async (req,res)=>{
         res.send("Logged out Successfully");
     }
     catch(err){
-        res.status(503).send("Error: "+err);
-    }
+    res.status(400).json({ message: err.message });
+}
 }
 
 const adminRegister = async(req,res)=>{
@@ -90,8 +105,8 @@ const adminRegister = async(req,res)=>{
      res.status(201).send("User Registered Successfully");
     }
     catch(err){
-        res.status(400).send("Error: "+err);
-    }
+    res.status(400).json({ message: err.message });
+}
 }
 
 const deleteProfile=async (req,res)=>{
