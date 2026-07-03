@@ -12,10 +12,12 @@ problemRouter.delete("/delete/:id",adminMiddleware,deleteProblem);
 
 // NOTE: these must come before "/:id" or that wildcard route swallows them
 problemRouter.get("/user", userMiddleware, solvedAllProblemByUser);
+
+problemRouter.get("/submittedProblem/:pid",userMiddleware,submittedProblem);
 problemRouter.get("/", getAllProblem);
 
 problemRouter.get("/:id",getProblemById);
-problemRouter.get("/submittedProblem/:pid",userMiddleware,submittedProblem);
+
 
 // fetch
 // update

@@ -89,8 +89,14 @@ const submitCode = async (req, res) => {
       await req.result.save();
     }
 
-    res.status(201).send(submittedResult);
-
+    const accepted = (status == 'accepted')
+    res.status(201).json({
+      accepted,
+      totalTestCases: submittedResult.testCasesTotal,
+      passedTestCases: testCasesPassed,
+      runtime,
+      memory
+    });
   }
   catch (err) {
     res.status(500).send("Internal Server Error " + err);
@@ -109,7 +115,7 @@ const submitCode = async (req, res) => {
 //     stderr: null,
 //     token: '611405fa-4f31-44a6-99c8-6f407bc14e73',
 
-const runCode=async (req,res)=>{
+const runCode = async (req, res) => {
   try {
     const userId = req.result._id;
     const problemId = req.params.id;
@@ -123,7 +129,7 @@ const runCode=async (req,res)=>{
     const problem = await Problem.findById(problemId);
     if (!problem) return res.status(404).send("Problem not found");
 
-  
+
 
     //    Judge0 code ko submit karna hai
 
@@ -143,9 +149,36 @@ const runCode=async (req,res)=>{
 
     const testResult = await submitToken(resultToken);
 
-  
+    let testCasesPassed = 0;
+    let runtime = 0;
+    let memory = 0;
+    let status = true;
+    let errorMessage = null;
 
-    res.status(201).send(testResult);
+    for (const test of testResult) {
+      if (test.status_id == 3) {
+        testCasesPassed++;
+        runtime = runtime + parseFloat(test.time)
+        memory = Math.max(memory, test.memory);
+      } else {
+        if (test.status_id == 4) {
+          status = false
+          errorMessage = test.stderr
+        }
+        else {
+          status = false
+          errorMessage = test.stderr
+        }
+      }
+    }
+
+
+    res.status(201).json({
+      success: status,
+      testCases: testResult,
+      runtime,
+      memory
+    });
 
   }
   catch (err) {
@@ -158,4 +191,4 @@ const runCode=async (req,res)=>{
 
 
 
-module.exports = {submitCode,runCode};
+module.exports = { submitCode, runCode };
