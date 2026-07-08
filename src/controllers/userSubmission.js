@@ -17,8 +17,12 @@ const submitCode = async (req, res) => {
       return res.status(400).send("Some field missing");
 
     //    Fetch the problem from database
+//    Fetch the problem from database
     const problem = await Problem.findById(problemId);
+    if (!problem) return res.status(404).send("Problem not found");
     //    testcases(Hidden)
+
+    //   Kya apne submission store kar du pehle....    //    testcases(Hidden)
 
     //   Kya apne submission store kar du pehle....
     const submittedResult = await Submission.create({

@@ -2,6 +2,7 @@ const axios = require("axios");
 
 const getLanguageById = (lang) => {
     const language = {
+        "cpp": 54,
         "c++": 54,
         "java": 62,
         "javascript": 63
@@ -46,7 +47,7 @@ async function waiting(timer) {
 const submitToken = async (resultTokens) => {
     const options = {
         method: 'GET',
-        url: 'https://judge0-extra-ce.p.rapidapi.com/submissions/batch',
+        url: 'https://judge0-ce.p.rapidapi.com/submissions/batch',
         params: {
             tokens: resultTokens.join(","),
             base64_encoded: 'false',
@@ -116,5 +117,3 @@ const submitToken = async (resultTokens) => {
 
 
 module.exports = { getLanguageById, submitBatch, submitToken };
-
-
