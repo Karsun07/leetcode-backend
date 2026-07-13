@@ -12,6 +12,9 @@ const createProblem = async (req,res)=>{
         referenceSolution, problemCreator
     } = req.body;
 
+    if (!Array.isArray(referenceSolution) || referenceSolution.length === 0) {
+      return res.status(400).send("referenceSolution must be a non-empty array");
+    }
 
     try{
        
@@ -44,7 +47,7 @@ const createProblem = async (req,res)=>{
        const testResult = await submitToken(resultToken);
 
 
-       console.log(testResult);
+      
 
        for(const test of testResult){
         if(test.status_id!=3){
@@ -76,7 +79,9 @@ const updateProblem = async (req,res)=>{
     visibleTestCases,hiddenTestCases,startCode,
     referenceSolution, problemCreator
    } = req.body;
-
+   if (!Array.isArray(referenceSolution) || referenceSolution.length === 0) {
+      return res.status(400).send("referenceSolution must be a non-empty array");
+    }
   try{
 
      if(!id){
@@ -251,7 +256,6 @@ const submittedProblem = async(req,res)=>{
      res.status(500).send("Internal Server Error");
   }
 }
-
 
 
 module.exports = {createProblem,updateProblem,deleteProblem,getProblemById,getAllProblem,solvedAllProblemByUser,submittedProblem};
