@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const redisClient = require("../config/redis");
 const Submission = require("../models/submission");
+const {generateAccessToken,generateRefreshToken,setAuthCookies,clearAuthCookies}= require("../utils/tokenUtils");
 
 const register = async (req, res) => {
     try {
@@ -17,8 +18,11 @@ const register = async (req, res) => {
         // create user
         const user = await User.create(req.body);
         // generate token
-        const token = jwt.sign({ _id: user._id, emailId: emailId, role: 'user' }, process.env.JWT_KEY, { expiresIn: 60 * 60 });
-        res.cookie('token', token, { maxAge: 60 * 60 * 1000 });
+        const accessToken=generateAccessToken(user);
+        const refreshToken=generateRefreshToken(user);
+        setAuthCookies(res,accessToken,refreshToken);
+
+
         const reply = {
             firstName: user.firstName,
             emailId: user.emailId,
@@ -27,7 +31,7 @@ const register = async (req, res) => {
         }
         res.status(200).json({
             user: reply,
-            message: "Loggin Successfull"
+            message: "Registered Successfull"
         })
     }
     catch (err) {
@@ -55,8 +59,10 @@ const login = async (req, res) => {
         if (!isMatch) {
             throw new Error("Invalid Credential");
         }
-        const token = jwt.sign({ _id: user._id, emailId: emailId, role: user.role }, process.env.JWT_KEY, { expiresIn: 60 * 60 });
-        res.cookie('token', token, { maxAge: 60 * 60 * 1000 });
+        const accessToken=generateAccessToken(user);
+        const refreshToken=generateRefreshToken(user);
+        setAuthCookies(res,accessToken,refreshToken);
+        
         const reply = {
             firstName: user.firstName,
             emailId: user.emailId,
@@ -74,15 +80,26 @@ const login = async (req, res) => {
 }
 const logout = async (req, res) => {
     try {
-        const { token } = req.cookies;
-        const payload = jwt.decode(token);
-
-        // token add in redis blocklist and when to remove it from the blocklist
-        await redisClient.set(`token:${token}`, 'Blocked');
-        await redisClient.expireAt(`token:${token}`, payload.exp);
+        const { accessToken,refreshToken } = req.cookies;
+        
+        if(accessToken){
+            const accessPayload=jwt.decode(accessToken);
+            await redisClient.set(`token:${accessToken}`,"Blocked");
+            if(accessPayload?.exp){
+                await redisClient.expireAt(`token:${accessToken}`,accessPayload.exp);
+            }
+        }
+        if(refreshToken){
+            const refreshPayload=jwt.decode(refreshToken);
+            await redisClient.set(`refreshToken:${refreshToken}`,"Blocked");
+            if(refreshPayload?.exp){
+                await redisClient.expireAt(`refreshToken:${refreshToken}`,refreshPayload.exp);
+            }
+        }
 
         // delete the cookies right now
-        res.cookie("token", null, { expires: new Date(Date.now()) });
+        clearAuthCookies(res);
+        
         res.send("Logged out Successfully");
     }
     catch (err) {
@@ -90,6 +107,42 @@ const logout = async (req, res) => {
     }
 }
 
+const refreshAccessToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.cookies;
+        if (!refreshToken) {
+            throw new Error("Refresh token not present, please login again");
+        }
+ 
+        // will throw if expired/invalid/signed with wrong secret
+        const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_KEY);
+ 
+        // reject if this refresh token was already blocklisted (e.g. by logout)
+        const isBlocked = await redisClient.exists(`refreshToken:${refreshToken}`);
+        if (isBlocked) {
+            throw new Error("Refresh token invalid, please login again");
+        }
+ 
+        const user = await User.findById(payload._id);
+        if (!user) {
+            throw new Error("User Not Found");
+        }
+ 
+        // rotate: invalidate the old refresh token and issue a brand new
+        // access + refresh pair, so a stolen refresh token is only usable once
+        await redisClient.set(`refreshToken:${refreshToken}`, 'Blocked');
+        await redisClient.expireAt(`refreshToken:${refreshToken}`, payload.exp);
+ 
+        const newAccessToken = generateAccessToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+        setAuthCookies(res, newAccessToken, newRefreshToken);
+ 
+        res.status(200).json({ message: "Access token refreshed" });
+    }
+    catch (err) {
+        res.status(401).json({ message: err.message });
+    }
+}
 const adminRegister = async (req, res) => {
     try {
         // validate the data;
@@ -102,8 +155,11 @@ const adminRegister = async (req, res) => {
         //
 
         const user = await User.create(req.body);
-        const token = jwt.sign({ _id: user._id, emailId: emailId, role: user.role }, process.env.JWT_KEY, { expiresIn: 60 * 60 });
-        res.cookie('token', token, { maxAge: 60 * 60 * 1000 });
+        const accessToken=generateAccessToken(user);
+        const refreshToken=generateRefreshToken(user);
+        setAuthCookies(res,accessToken,refreshToken);
+
+
         res.status(201).send("User Registered Successfully");
     }
     catch (err) {
@@ -132,4 +188,5 @@ const deleteProfile = async (req, res) => {
 
 }
 
-module.exports = { register, login, logout, adminRegister, deleteProfile };
+
+module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken};

@@ -4,10 +4,10 @@ const redisClient=require("../config/redis");
 
 const userMiddleware=async (req,res,next)=>{
     try{
-        const {token}=req.cookies;
-        if(!token) throw new Error("Token not Present");
+        const {accessToken}=req.cookies;
+        if(!accessToken) throw new Error("Token not Present");
 
-        const payload=jwt.verify(token,process.env.JWT_KEY);
+        const payload=jwt.verify(accessToken,process.env.JWT_KEY);
 
         const {_id}=payload;
         if(!_id) throw new Error("Invalid token");
@@ -15,7 +15,7 @@ const userMiddleware=async (req,res,next)=>{
         const result=await User.findById(_id);
         if(!result) throw new Error("User Not Found");
 
-        const isBlocked=await redisClient.exists(`token:${token}`);
+        const isBlocked=await redisClient.exists(`token:${accessToken}`);
 
         if(isBlocked)
             throw new Error("Invalid Token");

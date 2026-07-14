@@ -6,11 +6,11 @@ const adminMiddleware = async (req,res,next)=>{
 
     try{
 
-        const {token} = req.cookies;
-        if(!token)
+        const {accessToken} = req.cookies;
+        if(!accessToken)
             throw new Error("Token is not persent");
 
-        const payload = jwt.verify(token,process.env.JWT_KEY);
+        const payload = jwt.verify(accessToken,process.env.JWT_KEY);
 
         const {_id} = payload;
 
@@ -29,7 +29,7 @@ const adminMiddleware = async (req,res,next)=>{
 
         // Redis ke blockList mein persent toh nahi hai
 
-        const IsBlocked = await redisClient.exists(`token:${token}`);
+        const IsBlocked = await redisClient.exists(`token:${accessToken}`);
 
         if(IsBlocked)
             throw new Error("Invalid Token");

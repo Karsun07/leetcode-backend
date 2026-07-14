@@ -2,7 +2,7 @@ const express = require("express");
 
 const authRouter = express.Router();
 
-const { register, login, logout, adminRegister, deleteProfile } = require("../controllers/userAuthenticate");
+const { register, login, logout, adminRegister, deleteProfile, refreshAccessToken } = require("../controllers/userAuthenticate");
 const userMiddleware = require("../middleware/userMiddleware");
 const adminMiddleware = require('../middleware/adminMiddleware');
 // register
@@ -11,6 +11,9 @@ authRouter.post("/register", register);
 authRouter.post("/login", login);
 // logout
 authRouter.post("/logout", userMiddleware, logout);
+// refresh: NOT behind userMiddleware, since the whole point is that the
+// access token may already be expired here; it only needs the refreshToken cookie
+authRouter.post("/refresh", refreshAccessToken);
 
 authRouter.post('/admin/register', adminMiddleware, adminRegister);
 authRouter.delete("/profile", userMiddleware, deleteProfile);
