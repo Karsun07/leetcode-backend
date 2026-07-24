@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const ACCESS_TOKEN_EXPIRY_SEC = 15 * 60;        
+const ACCESS_TOKEN_EXPIRY_SEC = 15 * 60;       
 const REFRESH_TOKEN_EXPIRY_SEC =  60 * 60; // 1 hour
 
 const generateAccessToken = (user) => {

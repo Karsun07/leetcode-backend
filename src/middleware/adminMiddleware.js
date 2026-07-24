@@ -26,7 +26,10 @@ const adminMiddleware = async (req,res,next)=>{
         if(!result){
             throw new Error("User Doesn't Exist");
         }
-
+        // if 'logout from all devices' happened after this token was issued,
+        // this token is stale even though it hasn't 'expired' yet
+        if(result.sessionsValidAfter && payload.iat * 1000 < result.sessionsValidAfter.getTime())
+            throw new Error("Invalid Token");
         // Redis ke blockList mein persent toh nahi hai
 
         const IsBlocked = await redisClient.exists(`token:${accessToken}`);

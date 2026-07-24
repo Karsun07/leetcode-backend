@@ -31,6 +31,10 @@ const userSchema = new Schema({
         enum:['user','admin'],
         default: 'user'
     },
+    sessionsValidAfter:{
+        type:Date,
+        default:null
+    },
     problemSolved:{
         type:[{
             type:Schema.Types.ObjectId,

@@ -14,6 +14,11 @@ const userMiddleware=async (req,res,next)=>{
 
         const result=await User.findById(_id);
         if(!result) throw new Error("User Not Found");
+        
+        // if 'logout from all devices' happened after this token was issued,
+        // this token is stale even though it hasn't 'expired' yet
+        if(result.sessionsValidAfter && payload.iat * 1000 < result.sessionsValidAfter.getTime())
+            throw new Error("Invalid Token");
 
         const isBlocked=await redisClient.exists(`token:${accessToken}`);
 

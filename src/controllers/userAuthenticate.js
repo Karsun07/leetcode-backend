@@ -143,6 +143,42 @@ const refreshAccessToken = async (req, res) => {
         res.status(401).json({ message: err.message });
     }
 }
+const logoutAllDevices=async (req,res)=>{
+     try {
+        const userId=req.result._id;
+
+        // this is the actual 'logout everywhere' action: every access/refresh
+        // token already issued has an 'iat' before this timestamp, so as soon as
+        // this save completes, userMiddleware/adminMiddleware/refreshAccessToken
+        // will reject all of them on their next use, on every device
+        await User.findByIdAndUpdate(userId, { sessionsValidAfter: new Date() });
+
+        const { accessToken,refreshToken } = req.cookies;
+        
+        if(accessToken){
+            const accessPayload=jwt.decode(accessToken);
+            await redisClient.set(`token:${accessToken}`,"Blocked");
+            if(accessPayload?.exp){
+                await redisClient.expireAt(`token:${accessToken}`,accessPayload.exp);
+            }
+        }
+        if(refreshToken){
+            const refreshPayload=jwt.decode(refreshToken);
+            await redisClient.set(`refreshToken:${refreshToken}`,"Blocked");
+            if(refreshPayload?.exp){
+                await redisClient.expireAt(`refreshToken:${refreshToken}`,refreshPayload.exp);
+            }
+        }
+
+        // delete the cookies right now
+        clearAuthCookies(res);
+        
+        res.send("Logged out from all devices successfully");
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+}
 const adminRegister = async (req, res) => {
     try {
         // validate the data;
@@ -187,6 +223,6 @@ const deleteProfile = async (req, res) => {
     }
 
 }
+    
 
-
-module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken};
+module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices};
