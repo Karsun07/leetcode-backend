@@ -2,9 +2,11 @@ const express = require("express");
 
 const authRouter = express.Router();
 
-const { register, login, logout, adminRegister, deleteProfile, refreshAccessToken,logoutAllDevices } = require("../controllers/userAuthenticate");
+const { register, login, logout, adminRegister, deleteProfile, refreshAccessToken,logoutAllDevices,sendOtp } = require("../controllers/userAuthenticate");
 const userMiddleware = require("../middleware/userMiddleware");
 const adminMiddleware = require('../middleware/adminMiddleware');
+// otp send before registering the user
+authRouter.post("/send-otp",sendOtp);
 // register
 authRouter.post("/register", register);
 // login

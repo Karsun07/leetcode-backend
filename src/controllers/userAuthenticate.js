@@ -5,18 +5,59 @@ const User = require("../models/user");
 const redisClient = require("../config/redis");
 const Submission = require("../models/submission");
 const {generateAccessToken,generateRefreshToken,setAuthCookies,clearAuthCookies}= require("../utils/tokenUtils");
+const {generateOtp,storeOtp,sendOtpEmail,clearOtp,verifyOtp}=require("../utils/otpUtils");
+const validator = require("validator");
+
+const sendOtp=async (req,res)=>{
+    try{
+        const {emailId}=req.body;
+        if(!emailId || !validator.isEmail(emailId)){
+           throw new Error("Invalid Email");
+        }
+
+        const existingUser=await User.findOne({emailId});
+        if(existingUser){
+        throw new Error("User already exists with this email");
+        }
+
+        const otp=generateOtp();
+        await storeOtp(emailId,otp);
+        await sendOtpEmail(emailId,otp);
+        
+        res.status(200).json({message:"Otp send to email"});
+    }
+    catch(err){
+        res.status(400).json({message:err.message});
+
+    }
+}
 
 const register = async (req, res) => {
     try {
         // validate firstName, email and Password
         validate(req.body);
-        const { firstName, emailId, password } = req.body;
+
+        const { firstName, emailId, password,otp } = req.body;
+
+        if(!otp){
+            throw new Error("Otp is required");
+        }
+        const {valid,reason}=await verifyOtp(emailId,otp);
+
+        if(!valid){
+            throw new Error(reason);
+        }
+
         req.body.password = await bcrypt.hash(password, 10);
         // this is user route , if a user register by admin role is kept as user role
         req.body.role = 'user';
 
         // create user
         const user = await User.create(req.body);
+
+        // remove otp so it can't be replayed
+        await clearOtp(emailId);
+
         // generate token
         const accessToken=generateAccessToken(user);
         const refreshToken=generateRefreshToken(user);
@@ -225,4 +266,4 @@ const deleteProfile = async (req, res) => {
 }
     
 
-module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices};
+module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices,sendOtp};
