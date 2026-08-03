@@ -21,8 +21,8 @@ const sendOtp=async (req,res)=>{
         }
 
         const otp=generateOtp();
-        await storeOtp(emailId,otp);
-        await sendOtpEmail(emailId,otp);
+        await storeOtp(emailId,otp,"register");
+        await sendOtpEmail(emailId,otp,"register");
         
         res.status(200).json({message:"Otp send to email"});
     }
@@ -42,7 +42,7 @@ const register = async (req, res) => {
         if(!otp){
             throw new Error("Otp is required");
         }
-        const {valid,reason}=await verifyOtp(emailId,otp);
+        const {valid,reason}=await verifyOtp(emailId,otp,"register");
 
         if(!valid){
             throw new Error(reason);
@@ -56,7 +56,7 @@ const register = async (req, res) => {
         const user = await User.create(req.body);
 
         // remove otp so it can't be replayed
-        await clearOtp(emailId);
+        await clearOtp(emailId,"register");
 
         // generate token
         const accessToken=generateAccessToken(user);
@@ -168,6 +168,12 @@ const refreshAccessToken = async (req, res) => {
         if (!user) {
             throw new Error("User Not Found");
         }
+
+        // stale refresh token from before a 'logout all devices' (or a
+        // password reset, which also bumps this) — reject it
+        if (user.sessionsValidAfter && payload.iat * 1000 < user.sessionsValidAfter.getTime()) {
+            throw new Error("Refresh token invalid, please login again");
+        }
  
         // rotate: invalidate the old refresh token and issue a brand new
         // access + refresh pair, so a stolen refresh token is only usable once
@@ -220,6 +226,72 @@ const logoutAllDevices=async (req,res)=>{
         res.status(400).json({ message: err.message });
     }
 }
+// Step 1 of forgot-password: user submits their email, we mail them a code.
+// Unlike registration OTP, this REQUIRES the user to already exist — and,
+// importantly, does not reveal whether the email exists or not in the
+// response, so this endpoint can't be used to check who's registered.
+const forgotPasswordSendOtp = async (req, res) => {
+    try {
+        const { emailId } = req.body;
+        if (!emailId || !validator.isEmail(emailId)) {
+            throw new Error("Invalid Email");
+        }
+
+        const user = await User.findOne({ emailId });
+        if (user) {
+            const otp = generateOtp();
+            await storeOtp(emailId, otp, "reset");
+            await sendOtpEmail(emailId, otp, "reset");
+        }
+        // same response whether or not the user exists — prevents this
+        // endpoint being used to enumerate which emails are registered
+        res.status(200).json({ message: "If that email is registered, an OTP has been sent" });
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+}
+
+// Step 2 of forgot-password: verify the OTP and set the new password.
+const resetPassword = async (req, res) => {
+    try {
+        const { emailId, otp, newPassword } = req.body;
+        if (!emailId || !validator.isEmail(emailId)) {
+            throw new Error("Invalid Email");
+        }
+        if (!otp) {
+            throw new Error("Otp is required");
+        }
+        if (!newPassword || !validator.isStrongPassword(newPassword)) {
+            throw new Error("Weak Password");
+        }
+
+        const { valid, reason } = await verifyOtp(emailId, otp, "reset");
+        if (!valid) {
+            throw new Error(reason);
+        }
+
+        const user = await User.findOne({ emailId });
+        if (!user) {
+            throw new Error("User Not Found");
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        // changing the password should log out every existing session,
+        // on every device — same mechanism as logoutAllDevices
+        user.sessionsValidAfter = new Date();
+        await user.save();
+
+        // otp has done its job — remove it so it can't be replayed
+        await clearOtp(emailId, "reset");
+
+        res.status(200).json({ message: "Password reset successfully. Please log in again." });
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+}
+
 const adminRegister = async (req, res) => {
     try {
         // validate the data;
@@ -266,4 +338,4 @@ const deleteProfile = async (req, res) => {
 }
     
 
-module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices,sendOtp};
+module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices,sendOtp,forgotPasswordSendOtp,resetPassword};
