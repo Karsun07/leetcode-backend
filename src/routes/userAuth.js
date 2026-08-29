@@ -2,7 +2,7 @@ const express = require("express");
 
 const authRouter = express.Router();
 
-const { register, login, logout, adminRegister, deleteProfile, refreshAccessToken,logoutAllDevices,sendOtp,forgotPasswordSendOtp,resetPassword } = require("../controllers/userAuthenticate");
+const { register, login, logout, adminRegister, deleteProfile, refreshAccessToken,logoutAllDevices,sendOtp,forgotPasswordSendOtp,resetPassword,googleAuth } = require("../controllers/userAuthenticate");
 const userMiddleware = require("../middleware/userMiddleware");
 const adminMiddleware = require('../middleware/adminMiddleware');
 const otpRateLimiter = require("../middleware/otpRateLimitter");
@@ -12,6 +12,8 @@ authRouter.post("/send-otp", otpRateLimiter, sendOtp);
 authRouter.post("/register", register);
 // login
 authRouter.post("/login", login);
+// google sign-in / sign-up (one endpoint handles both)
+authRouter.post("/google-auth", googleAuth);
 // logout
 authRouter.post("/logout", userMiddleware, logout);
 authRouter.post("/logoutAll", userMiddleware, logoutAllDevices);

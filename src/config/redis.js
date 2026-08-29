@@ -4,8 +4,8 @@ const redisClient = createClient({
     username: "default",
     password: process.env.REDIS_PASSWORD,
     socket: {
-        host: "megastrong-hyperneat-affectionate-13540.db.redis.io",
-        port: 11128
+        host: "base-macrofresh-crate-36628.db.redis.io",
+        port: 11391
     }
 });
 

@@ -6,6 +6,7 @@ const redisClient = require("../config/redis");
 const Submission = require("../models/submission");
 const {generateAccessToken,generateRefreshToken,setAuthCookies,clearAuthCookies}= require("../utils/tokenUtils");
 const {generateOtp,storeOtp,sendOtpEmail,clearOtp,verifyOtp}=require("../utils/otpUtils");
+const { verifyGoogleToken } = require("../utils/googleAuthUtils");
 const validator = require("validator");
 
 const sendOtp=async (req,res)=>{
@@ -95,6 +96,12 @@ const login = async (req, res) => {
         if (!user) {
             throw new Error("Invalid Credential");
         }
+
+        // this account was created via Google Sign-In and has no password set
+        if (user.authProvider === 'google' && !user.password) {
+            throw new Error("This account uses Google Sign-In. Please continue with Google.");
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
@@ -292,6 +299,63 @@ const resetPassword = async (req, res) => {
     }
 }
 
+// Handles both Google signup AND Google sign-in — Google doesn't distinguish
+// the two, so we do: no existing user with this email -> create one;
+// existing LOCAL account with this email -> link the googleId onto it
+// (email is already verified by Google, so this is safe); existing GOOGLE
+// account -> just log in.
+const googleAuth = async (req, res) => {
+    try {
+        const { credential } = req.body;
+        if (!credential) {
+            throw new Error("Google credential is required");
+        }
+
+        const { googleId, email, emailVerified, firstName } = await verifyGoogleToken(credential);
+
+        if (!emailVerified) {
+            throw new Error("Google account email is not verified");
+        }
+
+        let user = await User.findOne({ emailId: email });
+
+        if (!user) {
+            // brand new account — Google-only, no password
+            user = await User.create({
+                firstName,
+                emailId: email,
+                role: 'user',
+                authProvider: 'google',
+                googleId,
+            });
+        } else if (!user.googleId) {
+            // existing local (email/password) account with the same email —
+            // link this Google identity onto it rather than creating a duplicate
+            user.googleId = googleId;
+            await user.save();
+        }
+        // else: existing account already linked to this googleId — just log in
+
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+        setAuthCookies(res, accessToken, refreshToken);
+
+        const reply = {
+            firstName: user.firstName,
+            emailId: user.emailId,
+            _id: user._id,
+            role: user.role
+        }
+        res.status(200).json({
+            user: reply,
+            message: "Google authentication successful"
+        })
+    }
+    catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+}
+
 const adminRegister = async (req, res) => {
     try {
         // validate the data;
@@ -338,4 +402,4 @@ const deleteProfile = async (req, res) => {
 }
     
 
-module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices,sendOtp,forgotPasswordSendOtp,resetPassword};
+module.exports = { register, login, logout, adminRegister, deleteProfile ,refreshAccessToken,logoutAllDevices,sendOtp,forgotPasswordSendOtp,resetPassword,googleAuth};

@@ -35,6 +35,19 @@ const userSchema = new Schema({
         type:Date,
         default:null
     },
+    // 'local' = normal email/password account, 'google' = Google Sign-In only.
+    // A local account can also gain a googleId later if the same email signs
+    // in with Google (we link them rather than creating a duplicate user).
+    authProvider:{
+        type:String,
+        enum:['local','google'],
+        default:'local'
+    },
+    googleId:{
+        type:String,
+        unique:true,
+        sparse:true // allows many users with no googleId at all
+    },
     problemSolved:{
         type:[{
             type:Schema.Types.ObjectId,
@@ -44,7 +57,10 @@ const userSchema = new Schema({
     }, 
     password:{
         type:String,
-        required:true
+        // only required for local accounts — a Google-only account never has one
+        required: function () {
+            return this.authProvider === 'local';
+        }
     }
 },{
     timestamps:true

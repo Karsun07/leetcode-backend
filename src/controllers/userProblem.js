@@ -61,7 +61,7 @@ const createProblem = async (req,res)=>{
       // We can store it in our DB
 
     const userProblem =  await Problem.create({
-        ...req.body,
+        ...req.body,  
         problemCreator: req.result._id
       });
 
@@ -200,6 +200,29 @@ const getProblemById = async(req,res)=>{
   }
 }
 
+// Admin-only: returns the FULL problem document, including hiddenTestCases.
+// Deliberately separate from getProblemById above — that route is public
+// (used by the student-facing problem page) and must never leak hidden test
+// cases. This one is only reachable behind adminMiddleware, for prefilling
+// the "Update Problem" edit form.
+const getProblemByIdAdmin = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!id)
+      return res.status(400).send("ID is Missing");
+
+    const getProblem = await Problem.findById(id);
+
+    if (!getProblem)
+      return res.status(404).send("Problem is Missing");
+
+    res.status(200).send(getProblem);
+  }
+  catch (err) {
+    res.status(500).send("Error: " + err);
+  }
+}
+
 const getAllProblem = async(req,res)=>{
 
   try{
@@ -245,11 +268,10 @@ const submittedProblem = async(req,res)=>{
     const problemId = req.params.pid;
 
    const ans = await Submission.find({userId,problemId});
-  
-  if(ans.length==0)
-    res.status(200).send("No Submission is persent");
 
-  res.status(200).send(ans);
+  // always send an array — even when empty — so the frontend can safely
+  // call .map() on the response without checking its type first
+  return res.status(200).send(ans);
 
   }
   catch(err){
@@ -258,6 +280,4 @@ const submittedProblem = async(req,res)=>{
 }
 
 
-module.exports = {createProblem,updateProblem,deleteProblem,getProblemById,getAllProblem,solvedAllProblemByUser,submittedProblem};
-
-
+module.exports = {createProblem,updateProblem,deleteProblem,getProblemById,getProblemByIdAdmin,getAllProblem,solvedAllProblemByUser,submittedProblem};
