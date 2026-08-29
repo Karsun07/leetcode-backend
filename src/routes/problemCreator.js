@@ -1,6 +1,7 @@
 const express = require('express');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const userMiddleware = require('../middleware/userMiddleware');
+const optionalAuthMiddleware = require('../middleware/optionalAuthMiddleware');
 const {createProblem,updateProblem,deleteProblem,getProblemById,getProblemByIdAdmin,getAllProblem,solvedAllProblemByUser,submittedProblem}=require("../controllers/userProblem");
 const problemRouter =  express.Router();
 
@@ -18,7 +19,7 @@ problemRouter.get("/admin/:id", adminMiddleware, getProblemByIdAdmin);
 problemRouter.get("/submittedProblem/:pid",userMiddleware,submittedProblem);
 problemRouter.get("/", getAllProblem);
 
-problemRouter.get("/:id",getProblemById);
+problemRouter.get("/:id",optionalAuthMiddleware,getProblemById);
 
 
 // fetch

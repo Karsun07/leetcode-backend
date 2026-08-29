@@ -9,6 +9,7 @@ const redisClient=require("./config/redis");
 const submitRouter = require("./routes/submit");
 const aiRouter = require("./routes/aiChatting")
 const videoRouter = require("./routes/videoCreator");
+const paymentRouter = require("./routes/paymentRoute");
 
 const cors = require('cors')
 
@@ -25,6 +26,7 @@ app.use("/problem",problemRouter);
 app.use("/submission",submitRouter);
 app.use('/ai',aiRouter);
 app.use("/video",videoRouter);
+app.use("/payment",paymentRouter);
 
 
 async function initializeConnection(){

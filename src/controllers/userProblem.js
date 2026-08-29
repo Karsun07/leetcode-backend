@@ -184,10 +184,24 @@ const getProblemById = async(req,res)=>{
 
    if(videos){
    const responseProblem = getProblem.toObject();
-   responseProblem.secureUrl = videos.secureUrl;
-   responseProblem.cloudinaryPublicId = videos.cloudinaryPublicId;
+
+   const isPremium = !!req.result?.isPremium || req.result?.role === 'admin';
+
+   // always safe to show a teaser — this is what tells the user "there IS
+   // an editorial, unlock it to watch"
    responseProblem.thumbnailUrl = videos.thumbnailUrl;
    responseProblem.duration = videos.duration;
+
+   if(isPremium){
+     // only a premium user's response ever contains the actual playable
+     // video url — must be gated server-side, not just hidden in the UI,
+     // or anyone could read it straight out of the network response
+     responseProblem.secureUrl = videos.secureUrl;
+     responseProblem.cloudinaryPublicId = videos.cloudinaryPublicId;
+     responseProblem.isPremiumLocked = false;
+   } else {
+     responseProblem.isPremiumLocked = true;
+   }
 
    return res.status(200).send(responseProblem);
    }

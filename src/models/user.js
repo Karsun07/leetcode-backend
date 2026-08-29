@@ -48,6 +48,12 @@ const userSchema = new Schema({
         unique:true,
         sparse:true // allows many users with no googleId at all
     },
+    // set true once a Razorpay payment for premium access is verified —
+    // one-time purchase, unlocks all editorial videos, no expiry
+    isPremium:{
+        type:Boolean,
+        default:false
+    },
     problemSolved:{
         type:[{
             type:Schema.Types.ObjectId,
