@@ -13,8 +13,13 @@ const paymentRouter = require("./routes/paymentRoute");
 
 const cors = require('cors')
 
+const allowedOrigins = [
+    'http://localhost:5173',
+    process.env.CLIENT_URL, // set this to your deployed frontend URL, e.g. https://yourapp.vercel.app
+].filter(Boolean);
+
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true 
 }))
 app.use(express.json());
